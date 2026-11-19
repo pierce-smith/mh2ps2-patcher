@@ -1,0 +1,30 @@
+# game images and anything extracted from them - never commit these
+*.iso
+*.ISO
+*.bin
+*.img
+*.chd
+*.cso
+*.zso
+*.elf
+SLUS_*
+SLES_*
+_SLUS_*
+_SLES_*
+
+# memory cards / save states
+*.ps2
+*.mcd
+*.p2s
+
+# build leftovers
+*.zip
+release/
+__pycache__/
+*.pyc
+node_modules/
+
+# os junk
+.DS_Store
+Thumbs.db
+desktop.ini

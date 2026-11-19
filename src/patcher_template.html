@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manhunt 2 Uncut Patcher</title>
+<style>
+:root {
+  --bg: #f4f2ef; --panel: #ffffff; --text: #1b1a19; --muted: #6b6560; --line: #ddd7d0;
+  --accent: #a3201b; --accent-text: #ffffff; --ok: #2f7a3b; --bad: #b3261e; --bar: #e7e1da;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121110; --panel: #1c1a19; --text: #ece8e3; --muted: #9c958e; --line: #2f2c29;
+    --accent: #d23a31; --accent-text: #ffffff; --ok: #6cc47b; --bad: #ff7b72; --bar: #2a2725;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121110; --panel: #1c1a19; --text: #ece8e3; --muted: #9c958e; --line: #2f2c29;
+  --accent: #d23a31; --accent-text: #ffffff; --ok: #6cc47b; --bad: #ff7b72; --bar: #2a2725;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 640px; margin: 0 auto; padding: 32px 16px 48px; }
+h1 { font-size: 26px; line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.01em; }
+.sub { color: var(--muted); margin: 0 0 24px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+.step { display: flex; gap: 12px; align-items: flex-start; }
+.num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-text);
+  display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+.step h2 { font-size: 16px; margin: 2px 0 4px; }
+.step p { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+.body { flex: 1; min-width: 0; }
+label.file { display: inline-block; padding: 9px 14px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+  font-weight: 600; font-size: 14px; background: var(--bg); }
+label.file:hover { border-color: var(--accent); }
+input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.fname { display: block; margin-top: 8px; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.status { margin-top: 6px; font-size: 14px; }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+button.go { width: 100%; padding: 14px; border: 0; border-radius: 10px; background: var(--accent); color: var(--accent-text);
+  font: inherit; font-weight: 700; font-size: 17px; cursor: pointer; }
+button.go:disabled { opacity: 0.4; cursor: not-allowed; }
+.bar { height: 8px; background: var(--bar); border-radius: 4px; overflow: hidden; margin-top: 12px; }
+.bar > div { height: 100%; width: 0; background: var(--accent); transition: width 0.15s; }
+#log { margin-top: 10px; font-size: 14px; min-height: 1.5em; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); margin-top: 12px; }
+footer { color: var(--muted); font-size: 13px; margin-top: 20px; }
+code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Manhunt 2 Uncut Patcher</h1>
+  <p class="sub">Turns your own US copy of Manhunt 2 (PS2) into the Uncut Hybrid ISO. Everything runs on this
+    device; nothing is uploaded. Works offline.</p>
+
+  <div class="card step">
+    <div class="num">1</div>
+    <div class="body">
+      <h2>Pick your clean US ISO</h2>
+      <p>Manhunt 2 (USA), SLUS-21613, unmodified. Expected: <code>%%SRC_SIZE_H%%</code>, CRC32 <code>%%SRC_CRC%%</code>.</p>
+      <label class="file">Choose ISO<input id="src" type="file" accept=".iso,.bin,application/octet-stream"></label>
+      <span class="fname" id="srcName"></span>
+      <div class="status" id="srcStatus"></div>
+    </div>
+  </div>
+
+  <div class="card step">
+    <div class="num">2</div>
+    <div class="body">
+      <h2>Pick the patch file</h2>
+      <p><code>%%PATCH_NAME%%</code> (%%PATCH_SIZE_H%%)</p>
+      <label class="file">Choose patch<input id="pat" type="file" accept=".xdelta,.vcdiff,application/octet-stream"></label>
+      <span class="fname" id="patName"></span>
+      <div class="status" id="patStatus"></div>
+    </div>
+  </div>
+
+  <div class="card step">
+    <div class="num">3</div>
+    <div class="body">
+      <h2>Patch and save</h2>
+      <p>Saves <code>%%OUT_NAME%%</code> (%%OUT_SIZE_H%%). Keep this exact name: OPL on a real PS2 needs it to recognize the game.</p>
+      <button class="go" id="go" disabled>Patch</button>
+      <label class="check"><input type="checkbox" id="verify" checked> Double-check the result before saving (adds ~1 minute)</label>
+      <div class="bar"><div id="prog"></div></div>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <footer>Standard xdelta (VCDIFF) patch: if you prefer, Delta Patcher, xdelta UI, UniPatcher (Android) or
+    <code>xdelta3 -d -s</code> also work with the same file.</footer>
+</main>
+
+<script>
+%%CORE_JS%%
+</script>
+<script>
+(function () {
+  "use strict";
+  const EXP = { srcSize: %%SRC_SIZE%%, srcCrc: 0x%%SRC_CRC%%, patSize: %%PATCH_SIZE%%, patCrc: 0x%%PATCH_CRC%%,
+                outSize: %%OUT_SIZE%%, outCrc: 0x%%OUT_CRC%%, outName: "%%OUT_NAME%%" };
+  const M = window.MH2Patch;
+  const $ = (id) => document.getElementById(id);
+  const state = { src: null, pat: null, srcOk: false, patOk: false, busy: false };
+  const hex = (n) => n.toString(16).padStart(8, "0");
+  const prog = (f) => { $("prog").style.width = (Math.max(0, Math.min(1, f)) * 100).toFixed(1) + "%"; };
+  const log = (msg, cls) => { const el = $("log"); el.textContent = msg; el.className = cls || ""; };
+  const set = (id, msg, cls) => { const el = $(id); el.textContent = msg; el.className = "status " + (cls || ""); };
+  const refresh = () => { $("go").disabled = !(state.srcOk && state.patOk) || state.busy; };
+
+  async function check(kind) {
+    const f = state[kind], exp = kind === "src" ? [EXP.srcSize, EXP.srcCrc] : [EXP.patSize, EXP.patCrc];
+    const sid = kind + "Status"; state[kind + "Ok"] = false; refresh();
+    $(kind + "Name").textContent = f.name;
+    if (f.size !== exp[0]) {
+      set(sid, kind === "src"
+        ? `Wrong size (${f.size.toLocaleString()} bytes, expected ${exp[0].toLocaleString()}). This is not the clean US ISO the patch was made for.`
+        : `Wrong size: this is not the right patch file, or the download is incomplete.`, "bad");
+      return;
+    }
+    set(sid, "Checking file... 0%");
+    try {
+      const crc = await M.crcBlob(f, (x) => set(sid, `Checking file... ${Math.floor(x * 100)}%`));
+      if (state[kind] !== f) return;
+      if (crc !== exp[1]) {
+        set(sid, kind === "src"
+          ? `CRC32 ${hex(crc)} does not match ${hex(exp[1])}. This ISO is modified or a different dump; the patch would produce a broken game.`
+          : `CRC32 ${hex(crc)} does not match: the patch download is damaged. Download it again.`, "bad");
+        return;
+      }
+      set(sid, "✓ Correct file", "ok"); state[kind + "Ok"] = true;
+    } catch (e) { set(sid, "Could not read the file: " + e.message, "bad"); }
+    refresh();
+  }
+  for (const k of ["src", "pat"]) $(k).addEventListener("change", (ev) => {
+    const f = ev.target.files[0]; if (!f) return; state[k] = f; check(k);
+  });
+
+  $("go").addEventListener("click", async () => {
+    state.busy = true; refresh(); prog(0);
+    try {
+      // ask for the save location first (Chrome/Edge desktop); must happen right after the click
+      let handle = null;
+      if (window.showSaveFilePicker) {
+        try { handle = await window.showSaveFilePicker({ suggestedName: EXP.outName,
+          types: [{ description: "PS2 disc image", accept: { "application/octet-stream": [".iso"] } }] }); }
+        catch (e) { if (e.name === "AbortError") { log("Cancelled."); return; } handle = null; }
+      }
+      log("Reading patch...");
+      const { parts, size } = await M.plan(state.src, state.pat, (x) => prog(x * 0.05));
+      if (size !== EXP.outSize) throw new Error(`patched size ${size} != expected ${EXP.outSize}`);
+      if ($("verify").checked) {
+        log("Double-checking the patched data...");
+        const crc = await M.crcPlan(parts, size, (x) => { prog(0.05 + x * 0.45); log(`Double-checking the patched data... ${Math.floor(x * 100)}%`); });
+        if (crc !== EXP.outCrc) throw new Error(`result CRC32 ${hex(crc)} != expected ${hex(EXP.outCrc)}`);
+      }
+      const blobs = parts.map((p) => p.u ? new Blob([p.u]) : p.b.slice(p.s, p.e));
+      if (handle) {
+        const w = await handle.createWritable(); let done = 0;
+        for (const b of blobs) {
+          for (let s = 0; s < b.size; s += 1 << 25) {
+            const c = b.slice(s, Math.min(b.size, s + (1 << 25)));
+            await w.write(c); done += c.size;
+            prog(0.5 + 0.5 * done / size); log(`Saving... ${Math.floor(done / size * 100)}%`);
+          }
+        }
+        await w.close();
+        prog(1); log(`Done! Saved ${handle.name}. Fully close the emulator before booting it.`, "ok");
+      } else {
+        const out = new Blob(blobs, { type: "application/octet-stream" });
+        const url = URL.createObjectURL(out);
+        const a = document.createElement("a"); a.href = url; a.download = EXP.outName;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10 * 60 * 1000);
+        prog(1); log(`Done! Your browser is saving ${EXP.outName} (${(size / 2 ** 30).toFixed(2)} GB). Wait for the download to finish.`, "ok");
+      }
+    } catch (e) {
+      log("Patching failed: " + e.message, "bad");
+    } finally { state.busy = false; refresh(); }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manhunt 2 Uncut Patcher</title>
+<style>
+:root {
+  --bg: #f4f2ef; --panel: #ffffff; --text: #1b1a19; --muted: #6b6560; --line: #ddd7d0;
+  --accent: #a3201b; --accent-text: #ffffff; --ok: #2f7a3b; --bad: #b3261e; --bar: #e7e1da;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121110; --panel: #1c1a19; --text: #ece8e3; --muted: #9c958e; --line: #2f2c29;
+    --accent: #d23a31; --accent-text: #ffffff; --ok: #6cc47b; --bad: #ff7b72; --bar: #2a2725;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121110; --panel: #1c1a19; --text: #ece8e3; --muted: #9c958e; --line: #2f2c29;
+  --accent: #d23a31; --accent-text: #ffffff; --ok: #6cc47b; --bad: #ff7b72; --bar: #2a2725;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 640px; margin: 0 auto; padding: 32px 16px 48px; }
+h1 { font-size: 26px; line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.01em; }
+.sub { color: var(--muted); margin: 0 0 24px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+.step { display: flex; gap: 12px; align-items: flex-start; }
+.num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-text);
+  display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+.step h2 { font-size: 16px; margin: 2px 0 4px; }
+.step p { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+.body { flex: 1; min-width: 0; }
+label.file { display: inline-block; padding: 9px 14px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+  font-weight: 600; font-size: 14px; background: var(--bg); }
+label.file:hover { border-color: var(--accent); }
+input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.fname { display: block; margin-top: 8px; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.status { margin-top: 6px; font-size: 14px; }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+button.go { width: 100%; padding: 14px; border: 0; border-radius: 10px; background: var(--accent); color: var(--accent-text);
+  font: inherit; font-weight: 700; font-size: 17px; cursor: pointer; }
+button.go:disabled { opacity: 0.4; cursor: not-allowed; }
+.bar { height: 8px; background: var(--bar); border-radius: 4px; overflow: hidden; margin-top: 12px; }
+.bar > div { height: 100%; width: 0; background: var(--accent); transition: width 0.15s; }
+#log { margin-top: 10px; font-size: 14px; min-height: 1.5em; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); margin-top: 12px; }
+footer { color: var(--muted); font-size: 13px; margin-top: 20px; }
+code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Manhunt 2 Uncut Patcher</h1>
+  <p class="sub">Turns your own US copy of Manhunt 2 (PS2) into the Uncut Hybrid ISO. Everything runs on this
+    device; nothing is uploaded. Works offline.</p>
+
+  <div class="card step">
+    <div class="num">1</div>
+    <div class="body">
+      <h2>Pick your clean US ISO</h2>
+      <p>Manhunt 2 (USA), SLUS-21613, unmodified. Expected: <code>2.47 GB (2,657,058,816 bytes)</code>, CRC32 <code>8f57c95b</code>.</p>
+      <label class="file">Choose ISO<input id="src" type="file" accept=".iso,.bin,application/octet-stream"></label>
+      <span class="fname" id="srcName"></span>
+      <div class="status" id="srcStatus"></div>
+    </div>
+  </div>
+
+  <div class="card step">
+    <div class="num">2</div>
+    <div class="body">
+      <h2>Pick the patch file</h2>
+      <p><code>Manhunt 2 Uncut Hybrid.xdelta</code> (61.7 MB)</p>
+      <label class="file">Choose patch<input id="pat" type="file" accept=".xdelta,.vcdiff,application/octet-stream"></label>
+      <span class="fname" id="patName"></span>
+      <div class="status" id="patStatus"></div>
+    </div>
+  </div>
+
+  <div class="card step">
+    <div class="num">3</div>
+    <div class="body">
+      <h2>Patch and save</h2>
+      <p>Saves <code>SLUS_216.13.MANHUNT 2.iso</code> (2.93 GB (3,141,462,016 bytes)). Keep this exact name: OPL on a real PS2 needs it to recognize the game.</p>
+      <button class="go" id="go" disabled>Patch</button>
+      <label class="check"><input type="checkbox" id="verify" checked> Double-check the result before saving (adds ~1 minute)</label>
+      <div class="bar"><div id="prog"></div></div>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <footer>Standard xdelta (VCDIFF) patch: if you prefer, Delta Patcher, xdelta UI, UniPatcher (Android) or
+    <code>xdelta3 -d -s</code> also work with the same file.</footer>
+</main>
+
+<script>
+/* MH2 patcher core: streaming VCDIFF (RFC 3284 / xdelta3) decoder + CRC32.
+   Works on Blobs (browser File, or Node fs.openAsBlob). Instead of producing bytes it produces a "plan":
+   a list of parts {b: Blob, s, e} (slices of the source ISO or of the patch's ADD data) or {u: Uint8Array},
+   so the 3 GB output never has to sit in memory. */
+(function (root) {
+  "use strict";
+
+  // ---------- CRC32 ----------
+  const T = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; T[n] = c >>> 0; }
+  function crcUpdate(crc, u8) {
+    let c = ~crc;
+    for (let i = 0; i < u8.length; i++) c = T[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+    return ~c >>> 0;
+  }
+  async function readU8(blob, s, e) { return new Uint8Array(await blob.slice(s, e).arrayBuffer()); }
+  async function crcBlob(blob, onProgress, chunk = 1 << 24) {
+    let crc = 0;
+    for (let p = 0; p < blob.size; p += chunk) {
+      crc = crcUpdate(crc, await readU8(blob, p, Math.min(blob.size, p + chunk)));
+      if (onProgress) onProgress(Math.min(blob.size, p + chunk) / blob.size);
+    }
+    return crc >>> 0;
+  }
+  // CRC over a plan (the patched output) without materializing it
+  async function crcPlan(parts, total, onProgress, chunk = 1 << 24) {
+    let crc = 0, done = 0;
+    for (const p of parts) {
+      if (p.u) { crc = crcUpdate(crc, p.u); done += p.u.length; }
+      else for (let s = p.s; s < p.e; s += chunk) {
+        const e = Math.min(p.e, s + chunk);
+        crc = crcUpdate(crc, await readU8(p.b, s, e)); done += e - s;
+        if (onProgress) onProgress(done / total);
+      }
+    }
+    return crc >>> 0;
+  }
+
+  // ---------- default code table (RFC 3284 5.6) ----------
+  const NOOP = 0, ADD = 1, RUN = 2, COPY = 3;
+  const TABLE = [];
+  TABLE.push([RUN, 0, 0, NOOP, 0, 0]);
+  for (let s = 0; s <= 17; s++) TABLE.push([ADD, s, 0, NOOP, 0, 0]);
+  for (let m = 0; m <= 8; m++) {
+    TABLE.push([COPY, 0, m, NOOP, 0, 0]);
+    for (let s = 4; s <= 18; s++) TABLE.push([COPY, s, m, NOOP, 0, 0]);
+  }
+  for (let m = 0; m <= 5; m++) for (let a = 1; a <= 4; a++) for (let c = 4; c <= 6; c++) TABLE.push([ADD, a, 0, COPY, c, m]);
+  for (let m = 6; m <= 8; m++) for (let a = 1; a <= 4; a++) TABLE.push([ADD, a, 0, COPY, 4, m]);
+  for (let m = 0; m <= 8; m++) TABLE.push([COPY, 4, m, ADD, 1, 0]);
+  if (TABLE.length !== 256) throw new Error("code table");
+
+  class Reader {               // cursor over a Uint8Array
+    constructor(u8, pos = 0) { this.u = u8; this.p = pos; }
+    byte() { if (this.p >= this.u.length) throw new Error("patch truncated"); return this.u[this.p++]; }
+    varint() { let v = 0, b; do { b = this.byte(); v = v * 128 + (b & 0x7F); } while (b & 0x80); return v; }
+  }
+
+  // Build the output plan. src, patch: Blobs.
+  async function plan(src, patch, onProgress) {
+    const parts = [];
+    let head = await readU8(patch, 0, Math.min(patch.size, 1 << 16));
+    let r = new Reader(head);
+    if (r.byte() !== 0xD6 || r.byte() !== 0xC3 || r.byte() !== 0xC4) throw new Error("not an xdelta/VCDIFF patch");
+    r.byte();                                   // version
+    const hdr = r.byte();
+    if (hdr & 0x01) throw new Error("patch uses secondary compression (re-create it with xdelta3 -S none)");
+    if (hdr & 0x02) throw new Error("patch uses a custom code table (unsupported)");
+    if (hdr & 0x04) { const n = r.varint(); r.p += n; }   // application header (file names) - skip
+    let off = r.p, total = 0;
+    while (off < patch.size) {
+      // window header: at most ~40 bytes before the sections
+      r = new Reader(await readU8(patch, off, Math.min(patch.size, off + 64)));
+      const wi = r.byte();
+      if (wi & 0x02) throw new Error("VCD_TARGET windows are not supported");
+      let segLen = 0, segPos = 0;
+      if (wi & 0x01) { segLen = r.varint(); segPos = r.varint(); }
+      const encLen = r.varint(), encStart = r.p;
+      const winLen = r.varint();
+      const di = r.byte(); if (di) throw new Error("compressed delta sections are not supported");
+      const dataLen = r.varint(), instLen = r.varint(), addrLen = r.varint();
+      if (wi & 0x04) r.p += 4;                  // adler32 (output is verified by CRC32 instead)
+      const dataOff = off + r.p;
+      const ia = await readU8(patch, dataOff + dataLen, dataOff + dataLen + instLen + addrLen);
+      const inst = new Reader(ia.subarray(0, instLen)), addr = new Reader(ia.subarray(instLen));
+      const near = [0, 0, 0, 0], same = new Array(768).fill(0); let nextNear = 0;
+      let dataCur = 0, tpos = 0;               // tpos = bytes produced in this window
+      let win = [];                            // parts of this window
+      let mat = null;                          // materialized window bytes (only after a target-copy)
+      const pushPart = (p) => {
+        if (mat) {                             // window already materialized: append bytes
+          throw new Error("internal: pushPart after materialize");
+        }
+        const last = win[win.length - 1];
+        if (last && !last.u && !p.u && last.b === p.b && last.e === p.s) last.e = p.e; else win.push(p);
+      };
+      const materialize = async () => {        // window -> one Uint8Array (needed for target self-copies)
+        const buf = new Uint8Array(winLen); let o = 0;
+        for (const p of win) { const u = p.u || await readU8(p.b, p.s, p.e); buf.set(u, o); o += u.length; }
+        mat = buf; win = [];
+      };
+      const decodeAddr = (mode, here) => {
+        let a;
+        if (mode === 0) a = addr.varint();
+        else if (mode === 1) a = here - addr.varint();
+        else if (mode <= 5) a = near[mode - 2] + addr.varint();
+        else a = same[(mode - 6) * 256 + addr.byte()];
+        near[nextNear] = a; nextNear = (nextNear + 1) % 4; same[a % 768] = a;
+        return a;
+      };
+      const exec = async (type, size, mode) => {
+        if (type === NOOP) return;
+        if (size === 0) size = inst.varint();
+        if (type === ADD) {
+          if (mat) { mat.set(await readU8(patch, dataOff + dataCur, dataOff + dataCur + size), tpos); }
+          else pushPart({ b: patch, s: dataOff + dataCur, e: dataOff + dataCur + size });
+          dataCur += size;
+        } else if (type === RUN) {
+          const byte = (await readU8(patch, dataOff + dataCur, dataOff + dataCur + 1))[0]; dataCur += 1;
+          if (mat) mat.fill(byte, tpos, tpos + size); else pushPart({ u: new Uint8Array(size).fill(byte) });
+        } else {
+          const a = decodeAddr(mode, segLen + tpos);
+          if (a < segLen) {
+            if (a + size > segLen) throw new Error("copy crosses source segment");
+            if (mat) mat.set(await readU8(src, segPos + a, segPos + a + size), tpos);
+            else pushPart({ b: src, s: segPos + a, e: segPos + a + size });
+          } else {
+            if (!mat) await materialize();
+            const t0 = a - segLen;
+            for (let i = 0; i < size; i++) mat[tpos + i] = mat[t0 + i];   // may overlap (byte-wise, per RFC)
+          }
+        }
+        tpos += size;
+      };
+      while (inst.p < inst.u.length) {
+        const [t1, s1, m1, t2, s2, m2] = TABLE[inst.byte()];
+        await exec(t1, s1, m1); await exec(t2, s2, m2);
+      }
+      if (tpos !== winLen) throw new Error(`window size mismatch (${tpos} != ${winLen})`);
+      if (mat) parts.push({ u: mat }); else for (const p of win) {
+        const last = parts[parts.length - 1];
+        if (last && !last.u && !p.u && last.b === p.b && last.e === p.s) last.e = p.e; else parts.push(p);
+      }
+      total += winLen;
+      off = off + encStart + encLen;          // encStart is relative to this window's header read
+      if (onProgress) onProgress(off / patch.size);
+    }
+    return { parts, size: total };
+  }
+
+  const api = { crcUpdate, crcBlob, crcPlan, plan };
+  root.MH2Patch = api;
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  "use strict";
+  const EXP = { srcSize: 2657058816, srcCrc: 0x8f57c95b, patSize: 64689389, patCrc: 0x67059880,
+                outSize: 3141462016, outCrc: 0x26d5ed15, outName: "SLUS_216.13.MANHUNT 2.iso" };
+  const M = window.MH2Patch;
+  const $ = (id) => document.getElementById(id);
+  const state = { src: null, pat: null, srcOk: false, patOk: false, busy: false };
+  const hex = (n) => n.toString(16).padStart(8, "0");
+  const prog = (f) => { $("prog").style.width = (Math.max(0, Math.min(1, f)) * 100).toFixed(1) + "%"; };
+  const log = (msg, cls) => { const el = $("log"); el.textContent = msg; el.className = cls || ""; };
+  const set = (id, msg, cls) => { const el = $(id); el.textContent = msg; el.className = "status " + (cls || ""); };
+  const refresh = () => { $("go").disabled = !(state.srcOk && state.patOk) || state.busy; };
+
+  async function check(kind) {
+    const f = state[kind], exp = kind === "src" ? [EXP.srcSize, EXP.srcCrc] : [EXP.patSize, EXP.patCrc];
+    const sid = kind + "Status"; state[kind + "Ok"] = false; refresh();
+    $(kind + "Name").textContent = f.name;
+    if (f.size !== exp[0]) {
+      set(sid, kind === "src"
+        ? `Wrong size (${f.size.toLocaleString()} bytes, expected ${exp[0].toLocaleString()}). This is not the clean US ISO the patch was made for.`
+        : `Wrong size: this is not the right patch file, or the download is incomplete.`, "bad");
+      return;
+    }
+    set(sid, "Checking file... 0%");
+    try {
+      const crc = await M.crcBlob(f, (x) => set(sid, `Checking file... ${Math.floor(x * 100)}%`));
+      if (state[kind] !== f) return;
+      if (crc !== exp[1]) {
+        set(sid, kind === "src"
+          ? `CRC32 ${hex(crc)} does not match ${hex(exp[1])}. This ISO is modified or a different dump; the patch would produce a broken game.`
+          : `CRC32 ${hex(crc)} does not match: the patch download is damaged. Download it again.`, "bad");
+        return;
+      }
+      set(sid, "✓ Correct file", "ok"); state[kind + "Ok"] = true;
+    } catch (e) { set(sid, "Could not read the file: " + e.message, "bad"); }
+    refresh();
+  }
+  for (const k of ["src", "pat"]) $(k).addEventListener("change", (ev) => {
+    const f = ev.target.files[0]; if (!f) return; state[k] = f; check(k);
+  });
+
+  $("go").addEventListener("click", async () => {
+    state.busy = true; refresh(); prog(0);
+    try {
+      // ask for the save location first (Chrome/Edge desktop); must happen right after the click
+      let handle = null;
+      if (window.showSaveFilePicker) {
+        try { handle = await window.showSaveFilePicker({ suggestedName: EXP.outName,
+          types: [{ description: "PS2 disc image", accept: { "application/octet-stream": [".iso"] } }] }); }
+        catch (e) { if (e.name === "AbortError") { log("Cancelled."); return; } handle = null; }
+      }
+      log("Reading patch...");
+      const { parts, size } = await M.plan(state.src, state.pat, (x) => prog(x * 0.05));
+      if (size !== EXP.outSize) throw new Error(`patched size ${size} != expected ${EXP.outSize}`);
+      if ($("verify").checked) {
+        log("Double-checking the patched data...");
+        const crc = await M.crcPlan(parts, size, (x) => { prog(0.05 + x * 0.45); log(`Double-checking the patched data... ${Math.floor(x * 100)}%`); });
+        if (crc !== EXP.outCrc) throw new Error(`result CRC32 ${hex(crc)} != expected ${hex(EXP.outCrc)}`);
+      }
+      const blobs = parts.map((p) => p.u ? new Blob([p.u]) : p.b.slice(p.s, p.e));
+      if (handle) {
+        const w = await handle.createWritable(); let done = 0;
+        for (const b of blobs) {
+          for (let s = 0; s < b.size; s += 1 << 25) {
+            const c = b.slice(s, Math.min(b.size, s + (1 << 25)));
+            await w.write(c); done += c.size;
+            prog(0.5 + 0.5 * done / size); log(`Saving... ${Math.floor(done / size * 100)}%`);
+          }
+        }
+        await w.close();
+        prog(1); log(`Done! Saved ${handle.name}. Fully close the emulator before booting it.`, "ok");
+      } else {
+        const out = new Blob(blobs, { type: "application/octet-stream" });
+        const url = URL.createObjectURL(out);
+        const a = document.createElement("a"); a.href = url; a.download = EXP.outName;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10 * 60 * 1000);
+        prog(1); log(`Done! Your browser is saving ${EXP.outName} (${(size / 2 ** 30).toFixed(2)} GB). Wait for the download to finish.`, "ok");
+      }
+    } catch (e) {
+      log("Patching failed: " + e.message, "bad");
+    } finally { state.busy = false; refresh(); }
+  });
+})();
+</script>
+</body>
+</html>
